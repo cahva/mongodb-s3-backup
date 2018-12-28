@@ -1,4 +1,5 @@
 FROM python:3-slim-stretch
+LABEL maintainer Markku Virtanen
 RUN apt update && \
     apt install -y gnupg jq && \
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4 && \
