@@ -22,13 +22,17 @@ function restore {
   mongorestore \
     --host "$MONGO_HOST" \
     --drop \
-    "$USER_ARG" \
-    "$PASSWORD_ARG" \
-    "$AUTH_DB_ARG" \
+    "${general_opts[@]}" \
+    "${restore_opts[@]}" \
     dump/
   echo "Cleaning up..."
   rm -rf dump/ "/backup/$BASENAME"
 }
+
+# Setup arrays for options
+general_opts=()
+list_opts=()
+restore_opts=()
 
 if [ -z "$AWS_ACCESS_KEY_ID" ]; then
   echo "AWS_ACCESS_KEY_ID must be set"
@@ -63,20 +67,20 @@ if [ -z "$MONGO_PORT" ]; then
 fi
 
 if [ -n "$MONGO_USER" ]; then
-  USER_ARG="--username=$MONGO_USER"
-  AUTH_DB_ARG="--authenticationDatabase=$MONGO_DB"
+  general_opts+=(--username "$MONGO_USER")
+  restore_opts+=(--authenticationDatabase "$MONGO_DB")
 fi
 
 if [ -n "$MONGO_PASSWORD" ]; then
-  PASSWORD_ARG="--password=$MONGO_PASSWORD"
+  general_opts+=(--password "$MONGO_PASSWORD")
 fi
 
 if [ -n "$MONGO_DB" ]; then
-  DB_ARG="--db=$MONGO_DB"
+  general_opts+=(--db "$MONGO_DB")
 fi
 
 if [ -n "$FOLDER" ]; then
-  FOLDER_ARG="--prefix=$FOLDER"
+  list_opts+=(--prefix "$FOLDER")
 fi
 
 if [ "$1" == "backup" ]; then
@@ -91,13 +95,7 @@ if [ "$1" == "backup" ]; then
   else
     FULLPATH="$FILENAME"
   fi
-
-  mongodump \
-    --host "$MONGO_HOST" \
-    --port "$MONGO_PORT" \
-    "$DB_ARG" \
-    "$USER_ARG" \
-    "$PASSWORD_ARG"
+  mongodump --host "$MONGO_HOST" --port "$MONGO_PORT" "${general_opts[@]}"
   rc=$?; if [[ $rc != 0 ]]; then echo "Error with mongodump: $rc"; exit $rc; fi
 
   tar -zcvf "$FILE" dump/
@@ -110,11 +108,11 @@ if [ "$1" == "backup" ]; then
 elif [ "$1" == "list" ]; then
   echo "Listing backups..."
 
-  aws s3api list-objects --bucket "$S3BUCKET" "$FOLDER_ARG" --query 'Contents[].{Key: Key, Size: Size}' --output table
+  aws s3api list-objects --bucket "$S3BUCKET" "${list_opts[@]}" --query 'Contents[].{Key: Key, Size: Size}' --output table
 elif [ "$1" == "latest" ]; then
   echo "Determining backup to restore..."
 
-  S3KEY=$(aws s3api list-objects --bucket "$S3BUCKET" "$FOLDER_ARG" --query "reverse(sort_by(Contents,&LastModified))"|jq -r '.[0].Key')
+  S3KEY=$(aws s3api list-objects --bucket "$S3BUCKET" "${list_opts[@]}" --query "reverse(sort_by(Contents,&LastModified))"|jq -r '.[0].Key')
   echo "Restoring $S3KEY."
   restore "$S3KEY"
 else
