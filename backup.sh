@@ -105,6 +105,12 @@ if [ "$1" == "backup" ]; then
 
   echo "Cleaning up..."
   rm -rf dump/ "$FILE"
+
+  # Set the process to sleep if set
+  if [ -n "$SLEEP_AFTER_BACKUP" ]; then
+    echo "Going to sleep for $SLEEP_AFTER_BACKUP seconds"
+    sleep "$SLEEP_AFTER_BACKUP"
+  fi
 elif [ "$1" == "list" ]; then
   echo "Listing backups..."
 

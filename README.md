@@ -31,6 +31,7 @@ Copy `.env.example` -> `.env` (or the name of your liking). It will be used as `
 - MONGO_PORT - default is 2017
 - MONGO_USER
 - S3BUCKET **required**
+- SLEEP_AFTER_BACKUP - seconds to sleep after backup
 
 When using FOLDER the final filename will be
 
